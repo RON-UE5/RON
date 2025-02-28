@@ -1,0 +1,16 @@
+.vs/
+Binaries/
+Intermediate/
+Saved/
+Content/FPWeapon
+Content/FirstPersonArms
+Content/FirstPerson
+Content/LevelPrototyping
+Content/__ExternalActors__/FirstPerson/
+Content/__ExternalActors__/Maps/TestMap/
+Content/__ExternalObjects__/FirstPerson/
+Content/__ExternalObjects__/Maps/TestMap/
+Content/Maps/
+Content/StarterContent/
+.idea/
+*.DotSettings.user
