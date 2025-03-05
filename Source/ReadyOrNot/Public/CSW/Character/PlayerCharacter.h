@@ -155,7 +155,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category=Camera)
 	class USpringArmComponent* SpringArmComp;
 
-	UPROPERTY(VisibleAnywhere, Category=Camera)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Camera)
 	class UCameraComponent* CameraComp;
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return CameraComp; }
 
