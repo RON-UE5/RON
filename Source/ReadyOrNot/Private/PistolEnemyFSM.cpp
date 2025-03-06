@@ -154,35 +154,35 @@ void UPistolEnemyFSM::DamageState()
 
 void UPistolEnemyFSM::DieState()
 {
-	PRINT_LOG(TEXT("적이 사망 상태로 전환"));
-
-	mState = EPTEnemyState::Die;
-	anim->AnimState = mState;
-
-	// AI 컨트롤러 해제
-	if (ai)
-	{
-		ai->UnPossess();
-		ai = nullptr;
-	}
-
-	// 적이 들고 있던 무기 드랍
-	if (me->CombatComp)
-	{
-		me->CombatComp->DropHoldingEquipment();
-	}
-	
-	// 충돌 처리 비활성화 (CapsuleComponent)
-	me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	// 사망 애니메이션 재생 (애니메이션이 끝날 때까지 물리 적용 X)
-	if (anim && anim->EnemyMontage)
-	{
-		// 상태를 죽음으로 전환
-		mState = EPTEnemyState::Die;
-		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
-		PRINT_LOG(TEXT("적이 사망 애니메이션 재생"));
-	}
+//	PRINT_LOG(TEXT("적이 사망 상태로 전환"));
+//
+//	mState = EPTEnemyState::Die;
+//	anim->AnimState = mState;
+//
+//	// AI 컨트롤러 해제
+//	if (ai)
+//	{
+//		ai->UnPossess();
+//		ai = nullptr;
+//	}
+//
+//	// 적이 들고 있던 무기 드랍
+//	if (me->CombatComp)
+//	{
+//		me->CombatComp->DropHoldingEquipment();
+//	}
+//	
+//	// 충돌 처리 비활성화 (CapsuleComponent)
+//	me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+//
+//	// 사망 애니메이션 재생
+//	if (anim && anim->EnemyMontage)
+//	{
+//		// 상태를 죽음으로 전환
+//		mState = EPTEnemyState::Die;
+//		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
+//		PRINT_LOG(TEXT("적이 사망 애니메이션 재생"));
+//	}
 }
 
 void UPistolEnemyFSM::EscapeState()
@@ -276,8 +276,14 @@ void UPistolEnemyFSM::OnDamageProcess(int32 damage)
 	}
 	else // 적이 죽었을 때
 	{
-		DieState();  // ✅ 사망 상태 처리 함수 호출
-		return;
+		mState = EPTEnemyState::Die;
+		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
+		//	// 충돌 처리 비활성화 (CapsuleComponent)
+     	me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		me->CombatComp->DropHoldingEquipment();
+	}
+	ai->StopMovement();
+	anim->AnimState = mState;
 	}
 
 	ai->StopMovement();
