@@ -196,42 +196,113 @@ void UEnemyFSM::DamageState()
 
 void UEnemyFSM::DieState()
 {
+	PRINT_LOG(TEXT("적이 사망 상태로 전환"));
+
+	mState = EEnemyState::Die;
+	anim->animState = mState;
+
+	// ✅ AI 컨트롤러 해제 및 플레이어 바라보는 기능 중지
+	if (ai)
+	{
+		ai->ClearFocus(EAIFocusPriority::Gameplay);
+		ai->UnPossess();
+		ai = nullptr;
+	}
+
+	// ✅ 적이 들고 있던 무기 드랍
+	if (me->CombatComp)
+	{
+		me->CombatComp->DropHoldingEquipment();
+	}
+    
+	// ✅ 충돌 처리 비활성화 (CapsuleComponent)
+	me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// ✅ 사망 애니메이션 재생 (애니메이션이 끝날 때까지 물리 적용 X)
+	if (anim && anim->EnemyMontage)
+	{
+		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
+		PRINT_LOG(TEXT("적이 사망 애니메이션 재생"));
+	}
 }
 
 void UEnemyFSM::OnDamageProcess(int32 damage)
 {
+//	// 체력 감소
+//	hp -= damage;
+//	
+//	if (ai && target)
+//	{
+//		ai->SetFocus(target, EAIFocusPriority::Gameplay);
+//		PRINT_LOG(TEXT("적이 플레이어를 바라봄"));
+//	}
+//
+//	if (hp <= surrenderHP && mState != EEnemyState::Surrender)	// 항복 상태 체크
+//	{
+//		mState = EEnemyState::Surrender;
+//		ai->StopMovement();
+//		//me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Surrender"));
+//		if (anim && anim->EnemySurrender)
+//		{
+//			me->PlayAnimMontage(anim->EnemySurrender, 1.0f, TEXT("Surrender"));
+//			me->CombatComp->DropHoldingEquipment(); // 들고있던 장비(총)을 드랍한다.
+//			PRINT_LOG(TEXT("적이 항복했습니다!"));
+//		}
+//		else
+//		{
+//			PRINT_LOG(TEXT("Error: EnemyMontage가 없습니다!"));
+//		}
+//		return;
+//	}
+//	// 만약 체력이 남아있다면
+//	if ( hp > 0 )
+//	{
+//		// 상태를 피격으로 변환
+//		mState = EEnemyState::Damage;
+//		
+//		int32 randValue = FMath::RandRange(0,1);
+//		FString sectionName = FString::Printf(TEXT("Damage%d"), randValue);
+//		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, FName(*sectionName));
+//	}
+//	else
+//	{
+//		// 상태를 죽음으로 전환
+//		mState = EEnemyState::Die;
+//		// 충돌 처리 비활성화 (CapsuleComponent)
+//		me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+//		// 죽음 애니메이션 재생
+//		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
+//	}
+//	// 길찾기 기능 중지
+//	ai->StopMovement();
+//	ai->UnPossess();
+//
+//	// 애니메이션 상태 동기화
+//	anim->animState = mState;
 	// 체력 감소
 	hp -= damage;
-	
+    
+	// ✅ AI가 피격 후 플레이어를 바라보도록 설정
 	if (ai && target)
 	{
 		ai->SetFocus(target, EAIFocusPriority::Gameplay);
 		PRINT_LOG(TEXT("적이 플레이어를 바라봄"));
+
+		// 일정 시간 후 다시 원래 상태로 복귀
+		FTimerHandle UnfocusTimer;
+		GetWorld()->GetTimerManager().SetTimer(UnfocusTimer, [this]()
+		{
+			if (ai) ai->ClearFocus(EAIFocusPriority::Gameplay);
+			PRINT_LOG(TEXT("적이 더 이상 플레이어를 쳐다보지 않음"));
+		}, 1.5f, false); // 1.5초 후 원래 상태로 복귀
 	}
 
-	if (hp <= surrenderHP && mState != EEnemyState::Surrender)	// 항복 상태 체크
-	{
-		mState = EEnemyState::Surrender;
-		ai->StopMovement();
-		//me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Surrender"));
-		if (anim && anim->EnemySurrender)
-		{
-			me->PlayAnimMontage(anim->EnemySurrender, 1.0f, TEXT("Surrender"));
-			me->CombatComp->DropHoldingEquipment(); // 들고있던 장비(총)을 드랍한다.
-			PRINT_LOG(TEXT("적이 항복했습니다!"));
-		}
-		else
-		{
-			PRINT_LOG(TEXT("Error: EnemyMontage가 없습니다!"));
-		}
-		return;
-	}
 	// 만약 체력이 남아있다면
-	if ( hp > 0 )
+	if (hp > 0)
 	{
 		// 상태를 피격으로 변환
 		mState = EEnemyState::Damage;
-		
+
 		int32 randValue = FMath::RandRange(0,1);
 		FString sectionName = FString::Printf(TEXT("Damage%d"), randValue);
 		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, FName(*sectionName));
@@ -240,14 +311,11 @@ void UEnemyFSM::OnDamageProcess(int32 damage)
 	{
 		// 상태를 죽음으로 전환
 		mState = EEnemyState::Die;
-		// 죽음 애니메이션 재생
-		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
+		DieState(); // ✅ 사망 상태 처리 함수 호출
+		return;
 	}
-	// 길찾기 기능 중지
-	ai->StopMovement();
-	ai->UnPossess();
 
-	// 애니메이션 상태 동기화
+	ai->StopMovement();
 	anim->animState = mState;
 }
 

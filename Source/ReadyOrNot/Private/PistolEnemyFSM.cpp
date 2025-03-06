@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "NavigationSystem.h"
 #include "ReadyOrNot.h"
+#include "Components/CapsuleComponent.h"
 #include "CSW/Character/PlayerCharacter.h"
 #include "CSW/Equipment/Equipment.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -170,6 +171,9 @@ void UPistolEnemyFSM::DieState()
 	{
 		me->CombatComp->DropHoldingEquipment();
 	}
+	
+	// 충돌 처리 비활성화 (CapsuleComponent)
+	me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// 사망 애니메이션 재생 (애니메이션이 끝날 때까지 물리 적용 X)
 	if (anim && anim->EnemyMontage)
@@ -179,23 +183,6 @@ void UPistolEnemyFSM::DieState()
 		me->PlayAnimMontage(anim->EnemyMontage, 1.0f, TEXT("Die"));
 		PRINT_LOG(TEXT("적이 사망 애니메이션 재생"));
 	}
-
-	// 일정 시간 후 물리 적용 (예: 1초 뒤)
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
-	{
-		PRINT_LOG(TEXT("적의 물리 시뮬레이션 활성화"));
-
-		me->GetMesh()->SetSimulatePhysics(true);
-		me->GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-
-		// 특정 부위만 물리 적용 (머리, 팔은 유지)
-		me->GetMesh()->SetAllBodiesBelowSimulatePhysics(FName("pelvis"), true, true);
-
-		// 물리 적용 후 더 이상 상태 업데이트 중지
-		this->SetComponentTickEnabled(false);
-
-	}, 3.0f, false); // 1초 후 실행 (사망 애니메이션이 끝난 후 적용)
 }
 
 void UPistolEnemyFSM::EscapeState()
@@ -209,7 +196,7 @@ void UPistolEnemyFSM::EscapeState()
 
 	
 	// 도망 위치 설정 (랜덤 or 특정 위치)
-	escapeLocation = FVector(1335.0f, -886.0f, 0.0f); // 예제 좌표
+	escapeLocation = FVector(2126.275427f, -3586.238729f, 71.715371f); // 예제 좌표
 	PRINT_LOG(TEXT("도망 위치: %s"), *escapeLocation.ToString());
 
 	// AI 이동 시작 (한 번만 실행)
