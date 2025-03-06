@@ -285,9 +285,6 @@ void UPistolEnemyFSM::OnDamageProcess(int32 damage)
 	ai->StopMovement();
 	anim->AnimState = mState;
 	}
-
-	ai->StopMovement();
-	anim->AnimState = mState;
 //	hp -= damage;
 //
 //	if (ai && target)
@@ -320,7 +317,7 @@ void UPistolEnemyFSM::OnDamageProcess(int32 damage)
 //	}
 //	ai->StopMovement();
 //	anim->AnimState = mState;
-}
+
 
 bool UPistolEnemyFSM::GetRandomPositionInNavMesh(FVector centerLocation, float radius, FVector& dest)
 {
